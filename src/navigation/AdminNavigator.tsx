@@ -23,13 +23,13 @@ const Stack = createNativeStackNavigator<AppStackParamList>();
 export function AdminNavigator() {
   return (
     <Stack.Navigator
-      screenOptions={{
+      screenOptions={({ navigation }) => ({
         headerShown: true,
         headerStyle: { backgroundColor: colors.card },
         headerTintColor: colors.foreground,
         contentStyle: { backgroundColor: colors.background },
-        headerRight: AppHeaderRight,
-      }}
+        headerRight: () => <AppHeaderRight navigation={navigation} />,
+      })}
     >
       <Stack.Screen name="AdminHome" component={AdminHomeScreen} options={{ title: 'Dashboard' }} />
       <Stack.Screen name="Students" component={StudentsScreen} options={{ title: "O'quvchilarim" }} />

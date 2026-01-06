@@ -1,13 +1,41 @@
 import { http } from './http';
 
-export type TelegramUserStatus = {
-  isConnected?: boolean;
-  telegramUserId?: string;
+export type TelegramChannel = {
+  id: number;
+  chatId: string;
+  title?: string;
   username?: string;
-  firstName?: string;
-  lastName?: string;
+  inviteLink?: string;
+  type?: string;
+  groupName?: string;
+  subjectName?: string;
+  centerName?: string | null;
   [key: string]: any;
 };
+
+export type TelegramUserStatus = {
+  // backend (preferred)
+  isLinked?: boolean;
+  telegramUsername?: string;
+  telegramUserId?: string;
+  firstName?: string;
+  lastName?: string;
+  availableChannels?: TelegramChannel[];
+
+  // backward compatibility
+  isConnected?: boolean;
+  username?: string;
+  [key: string]: any;
+};
+
+export function isTelegramLinked(status: TelegramUserStatus | null | undefined): boolean {
+  return Boolean(status?.isLinked ?? status?.isConnected);
+}
+
+export function getTelegramUsername(status: TelegramUserStatus | null | undefined): string {
+  const name = String(status?.telegramUsername ?? status?.username ?? '').trim();
+  return name;
+}
 
 export async function getTelegramUserStatus(): Promise<TelegramUserStatus> {
   const res = await http.get<TelegramUserStatus>('/telegram/user-status');

@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
+  Linking,
   ScrollView,
   StyleSheet,
   Text,
@@ -13,7 +14,9 @@ import { showError, showSuccess } from '../../ui/toast';
 import {
   createTelegramConnectLink,
   getTelegramAdminChannels,
+  getTelegramUsername,
   getTelegramUserStatus,
+  isTelegramLinked,
   type TelegramUserStatus,
 } from '../../services/telegram';
 
@@ -22,6 +25,7 @@ export function TelegramManagementScreen() {
   const [status, setStatus] = useState<TelegramUserStatus | null>(null);
   const [connectLink, setConnectLink] = useState<string>('');
   const [channelsCount, setChannelsCount] = useState<number | null>(null);
+  const [actionLoading, setActionLoading] = useState(false);
 
   const load = async () => {
     try {
@@ -45,16 +49,44 @@ export function TelegramManagementScreen() {
     })();
   }, []);
 
+  const openUrl = async (url: string) => {
+    try {
+      const can = await Linking.canOpenURL(url);
+      if (!can) {
+        showError(t('common').errorTitle, "Linkni ochib bo'lmadi. Linkni qo'lda browser/Telegramga qo'ying.");
+        return;
+      }
+      await Linking.openURL(url);
+    } catch {
+      showError(t('common').errorTitle, "Linkni ochib bo'lmadi. Linkni qo'lda browser/Telegramga qo'ying.");
+    }
+  };
+
+  const onRefresh = async () => {
+    setActionLoading(true);
+    await load();
+    setActionLoading(false);
+  };
+
   const onGenerateLink = async () => {
     try {
+      setActionLoading(true);
       const res = await createTelegramConnectLink();
-      const link = String(res?.link ?? res?.url ?? '');
+      const link = res?.deepLink || res?.link || res?.url;
       setConnectLink(link);
       showSuccess(t('common').successTitle, 'Connect link yaratildi');
+      if (link) await openUrl(link);
     } catch (e: any) {
       const msg = e?.response?.data?.message || 'Connect link yaratib bo‘lmadi';
       showError(t('common').errorTitle, msg);
+    } finally {
+      setActionLoading(false);
     }
+  };
+
+  const onOpenLastLink = async () => {
+    if (!connectLink) return;
+    await openUrl(connectLink);
   };
 
   if (loading) {
@@ -71,9 +103,21 @@ export function TelegramManagementScreen() {
       <View style={styles.card}>
         <Text style={styles.title}>Ulanish holati</Text>
         <Text style={styles.muted}>
-          {status?.isConnected ? 'Ulangan' : 'Ulanmagan'}
+          {isTelegramLinked(status) ? 'Ulangan' : 'Ulanmagan'}
           {channelsCount !== null ? ` • Admin kanallar: ${channelsCount}` : ''}
         </Text>
+
+        {getTelegramUsername(status) ? (
+          <Text style={styles.muted}>@{getTelegramUsername(status).replace('@', '')}</Text>
+        ) : null}
+
+        <TouchableOpacity
+          style={[styles.secondaryButton, actionLoading && styles.buttonDisabled]}
+          onPress={onRefresh}
+          disabled={actionLoading}
+        >
+          <Text style={styles.secondaryButtonText}>Yangilash</Text>
+        </TouchableOpacity>
       </View>
 
       <View style={styles.card}>
@@ -82,8 +126,22 @@ export function TelegramManagementScreen() {
           {connectLink ? connectLink : "Link yo'q. 'Yaratish' tugmasini bosing."}
         </Text>
 
-        <TouchableOpacity style={styles.button} onPress={onGenerateLink}>
-          <Text style={styles.buttonText}>Yaratish</Text>
+        {connectLink ? (
+          <TouchableOpacity
+            style={[styles.secondaryButton, actionLoading && styles.buttonDisabled]}
+            onPress={onOpenLastLink}
+            disabled={actionLoading}
+          >
+            <Text style={styles.secondaryButtonText}>Linkni ochish</Text>
+          </TouchableOpacity>
+        ) : null}
+
+        <TouchableOpacity
+          style={[styles.button, actionLoading && styles.buttonDisabled]}
+          onPress={onGenerateLink}
+          disabled={actionLoading}
+        >
+          <Text style={styles.buttonText}>{actionLoading ? 'Kuting...' : 'Yaratish'}</Text>
         </TouchableOpacity>
       </View>
     </ScrollView>
@@ -133,5 +191,21 @@ const styles = StyleSheet.create({
   buttonText: {
     color: colors.accentForeground,
     fontWeight: '800',
+  },
+  secondaryButton: {
+    marginTop: 12,
+    backgroundColor: colors.secondary,
+    borderRadius: radii.md,
+    paddingVertical: 12,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  secondaryButtonText: {
+    color: colors.secondaryForeground,
+    fontWeight: '800',
+  },
+  buttonDisabled: {
+    opacity: 0.6,
   },
 });

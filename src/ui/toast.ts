@@ -24,3 +24,7 @@ export function showSuccess(title: string, message?: string) {
 export function showError(title: string, message?: string) {
   showToast('error', { title, message });
 }
+
+export function showInfo(title: string, message?: string) {
+  showToast('info', { title, message });
+}

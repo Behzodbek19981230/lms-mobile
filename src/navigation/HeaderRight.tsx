@@ -1,6 +1,5 @@
 import React, { useCallback, useContext } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { AuthContext } from '../contexts/AuthContext';
 import type { AppStackParamList } from './AppStackParamList';
@@ -8,8 +7,11 @@ import { colors } from '../theme/colors';
 import { showSuccess } from '../ui/toast';
 import { t } from '../i18n';
 
-export function AppHeaderRight() {
-  const navigation = useNavigation<NativeStackNavigationProp<AppStackParamList>>();
+export function AppHeaderRight({
+  navigation,
+}: {
+  navigation: NativeStackNavigationProp<AppStackParamList>;
+}) {
   const { logout } = useContext(AuthContext);
 
   const onLogout = useCallback(async () => {

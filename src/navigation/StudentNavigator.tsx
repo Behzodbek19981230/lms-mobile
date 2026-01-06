@@ -16,13 +16,13 @@ const Stack = createNativeStackNavigator<AppStackParamList>();
 export function StudentNavigator() {
   return (
     <Stack.Navigator
-      screenOptions={{
+      screenOptions={({ navigation }) => ({
         headerShown: true,
         headerStyle: { backgroundColor: colors.card },
         headerTintColor: colors.foreground,
         contentStyle: { backgroundColor: colors.background },
-        headerRight: AppHeaderRight,
-      }}
+        headerRight: () => <AppHeaderRight navigation={navigation} />,
+      })}
     >
       <Stack.Screen name="StudentHome" component={StudentHomeScreen} options={{ title: 'Dashboard' }} />
       <Stack.Screen name="StudentPayments" component={StudentPaymentsScreen} options={{ title: "Mening to'lovlarim" }} />

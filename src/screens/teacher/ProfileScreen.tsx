@@ -1,11 +1,53 @@
-import React, { useContext } from 'react';
-import { ScrollView, StyleSheet, Text, View } from 'react-native';
+import React, { useContext, useEffect, useMemo, useState } from 'react';
+import { ActivityIndicator, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { useNavigation } from '@react-navigation/native';
+import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { AuthContext } from '../../contexts/AuthContext';
+import type { AppStackParamList } from '../../navigation/AppStackParamList';
 import { colors, radii } from '../../theme/colors';
 import { t } from '../../i18n';
+import { getTelegramUserStatus, type TelegramUserStatus } from '../../services/telegram';
 
 export function ProfileScreen() {
   const { user } = useContext(AuthContext);
+  const navigation = useNavigation<NativeStackNavigationProp<AppStackParamList>>();
+  const [tgStatus, setTgStatus] = useState<TelegramUserStatus | null>(null);
+  const [tgLoading, setTgLoading] = useState(false);
+
+  const fullName = user ? String(user.fullName || `${user.firstName} ${user.lastName}`).trim() : '';
+  const initials = fullName
+    .split(' ')
+    .filter(Boolean)
+    .slice(0, 2)
+    .map(p => p[0]?.toUpperCase())
+    .join('');
+
+  const role = String(user.role ?? '');
+  const isStudent = role.toUpperCase() === 'STUDENT';
+
+  const tgLabel = useMemo(() => {
+    if (tgLoading) return 'Yuklanmoqda...';
+    if (!tgStatus) return '—';
+    return tgStatus.isConnected ? 'Ulangan' : 'Ulanmagan';
+  }, [tgLoading, tgStatus]);
+
+  useEffect(() => {
+    let alive = true;
+    (async () => {
+      if (!user) return;
+      try {
+        setTgLoading(true);
+        const s = await getTelegramUserStatus();
+        if (!alive) return;
+        setTgStatus(s);
+      } finally {
+        if (alive) setTgLoading(false);
+      }
+    })();
+    return () => {
+      alive = false;
+    };
+  }, [user]);
 
   if (!user) {
     return (
@@ -14,14 +56,6 @@ export function ProfileScreen() {
       </View>
     );
   }
-
-  const fullName = user.fullName || `${user.firstName} ${user.lastName}`;
-  const initials = fullName
-    .split(' ')
-    .filter(Boolean)
-    .slice(0, 2)
-    .map(p => p[0]?.toUpperCase())
-    .join('');
 
   return (
     <ScrollView
@@ -69,6 +103,34 @@ export function ProfileScreen() {
             {user.center?.name || '—'}
           </Text>
         </View>
+      </View>
+
+      <View style={styles.card}>
+        <Text style={styles.sectionTitle}>Telegram</Text>
+
+        <View style={[styles.row, styles.rowFirst]}>
+          <Text style={styles.label}>Ulanish holati</Text>
+          <View style={styles.valueInline}>
+            {tgLoading ? <ActivityIndicator size="small" color={colors.primary} /> : null}
+            <Text style={styles.value}>{tgLabel}</Text>
+          </View>
+        </View>
+
+        {isStudent ? (
+          <TouchableOpacity
+            style={styles.actionButton}
+            onPress={() => navigation.navigate('TelegramUser')}
+          >
+            <Text style={styles.actionButtonText}>Telegramga ulash</Text>
+          </TouchableOpacity>
+        ) : (
+          <TouchableOpacity
+            style={styles.actionButton}
+            onPress={() => navigation.navigate('TelegramManagement')}
+          >
+            <Text style={styles.actionButtonText}>Telegram Management</Text>
+          </TouchableOpacity>
+        )}
       </View>
     </ScrollView>
   );
@@ -158,6 +220,26 @@ const styles = StyleSheet.create({
     fontWeight: '800',
     flex: 1,
     textAlign: 'right',
+  },
+  valueInline: {
+    flex: 1,
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    alignItems: 'center',
+    gap: 8,
+  },
+  actionButton: {
+    marginTop: 12,
+    backgroundColor: colors.secondary,
+    borderRadius: radii.md,
+    paddingVertical: 12,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  actionButtonText: {
+    color: colors.secondaryForeground,
+    fontWeight: '800',
   },
   muted: {
     color: colors.mutedForeground,

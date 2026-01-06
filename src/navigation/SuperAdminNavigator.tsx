@@ -18,13 +18,13 @@ const Stack = createNativeStackNavigator<AppStackParamList>();
 export function SuperAdminNavigator() {
   return (
     <Stack.Navigator
-      screenOptions={{
+      screenOptions={({ navigation }) => ({
         headerShown: true,
         headerStyle: { backgroundColor: colors.card },
         headerTintColor: colors.foreground,
         contentStyle: { backgroundColor: colors.background },
-        headerRight: AppHeaderRight,
-      }}
+        headerRight: () => <AppHeaderRight navigation={navigation} />,
+      })}
     >
       <Stack.Screen name="SuperAdminHome" component={SuperAdminHomeScreen} options={{ title: 'Dashboard' }} />
       <Stack.Screen name="Subjects" component={SubjectsScreen} options={{ title: 'Mening fanlarim' }} />
