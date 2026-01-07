@@ -167,6 +167,7 @@ function App() {
           onMessage={onMessage}
           javaScriptEnabled
           domStorageEnabled
+          applicationNameForUserAgent="EduOneMobile"
           injectedJavaScriptBeforeContentLoaded={injectedViewport}
           injectedJavaScript={injectedViewport}
           setBuiltInZoomControls={Platform.OS === 'android'}
